@@ -1,0 +1,39 @@
+```html
+<!DOCTYPE html>
+
+<html>
+
+<body>
+
+<h1 id="status">Starting...</h1>
+
+<script>
+
+var status = document.getElementById("status");
+
+var relayWindow = null;
+
+function openRelayWindow() {
+
+    relayWindow = window.open(
+        "relay.html",
+        "RelayWindow",
+        "width=400,height=300"
+    );
+
+    if(relayWindow) {
+        status.textContent = "Relay window opened";
+    } else {
+        status.textContent = "Please allow popups";
+    }
+
+}
+
+openRelayWindow();
+
+</script>
+
+</body>
+
+</html>
+```
