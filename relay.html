@@ -1,1 +1,91 @@
-My code for drawing the popup window and calling relay.js will go here
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Server Relay</title>
+</head>
+
+<body>
+
+<h2 id="status">Connecting...</h2>
+
+<script>
+
+var socket = null;
+
+function setStatus(text) {
+
+    document.getElementById("status").textContent = text;
+
+}
+
+function notifyMain(type, data) {
+
+    if(window.opener) {
+
+        window.opener.postMessage({
+            type: type,
+            data: data
+        }, "*");
+
+    }
+
+}
+
+function connect() {
+
+    setStatus("Connecting to server...");
+
+    socket = new WebSocket(
+        "ws://217.154.36.84:6759"
+    );
+
+    socket.onopen = function() {
+
+        setStatus("Connected!");
+
+        notifyMain("relay_ready");
+
+        socket.send(JSON.stringify({
+            type: "hello"
+        }));
+
+    };
+
+    socket.onmessage = function(event) {
+
+        var data = event.data;
+
+        console.log(
+            "Server:",
+            data
+        );
+
+        notifyMain(
+            "relay_message",
+            data
+        );
+
+    };
+
+    socket.onclose = function() {
+
+        setStatus("Disconnected.");
+
+    };
+
+    socket.onerror = function() {
+
+        setStatus("Connection error.");
+
+    };
+
+}
+
+connect();
+
+</script>
+
+</body>
+
+</html>
