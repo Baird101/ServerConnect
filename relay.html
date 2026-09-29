@@ -10,26 +10,45 @@
 
 var status = document.getElementById("status");
 
-var socket = new WebSocket("wss://217.154.36.84:6396");
+var socket = new WebSocket("ws://217.154.36.84:6396");
 
-var peer = new RTCPeerConnection();
+var peer = new RTCPeerConnection({
+    iceServers: [
+        {
+            urls: "stun:stun.cloudflare.com:3478"
+        }
+    ]
+});
 
 var channel = peer.createDataChannel("relay");
 
 channel.onopen = function() {
+
     status.textContent = "WEBRTC CONNECTED!";
+
+    console.log("WebRTC connected");
+
+    channel.send("Hello from the webpage!");
 };
 
 channel.onclose = function() {
+
     status.textContent = "WEBRTC DISCONNECTED";
+
+    console.log("WebRTC disconnected");
 };
 
 channel.onmessage = function(event) {
+
     console.log("Received:", event.data);
+
 };
 
 peer.onicecandidate = function(event) {
-    if(event.candidate) {
+
+    if(event.candidate &&
+       socket.readyState === WebSocket.OPEN) {
+
         socket.send(JSON.stringify({
             type: "ice",
             candidate: event.candidate
@@ -37,13 +56,26 @@ peer.onicecandidate = function(event) {
     }
 };
 
+peer.onconnectionstatechange = function() {
+
+    console.log(
+        "WebRTC state:",
+        peer.connectionState
+    );
+
+};
+
 socket.onopen = function() {
 
     status.textContent = "Signaling connected";
 
+    console.log("Signaling connected");
+
     peer.createOffer()
         .then(function(offer) {
+
             return peer.setLocalDescription(offer);
+
         })
         .then(function() {
 
@@ -51,6 +83,11 @@ socket.onopen = function() {
                 type: "offer",
                 sdp: peer.localDescription.sdp
             }));
+
+        })
+        .catch(function(error) {
+
+            console.log("Offer error:", error);
 
         });
 
@@ -65,24 +102,44 @@ socket.onmessage = function(event) {
         peer.setRemoteDescription({
             type: "answer",
             sdp: msg.sdp
+        })
+        .catch(function(error) {
+
+            console.log(
+                "Remote description error:",
+                error
+            );
+
         });
 
     }
 
     if(msg.type === "ice") {
 
-        peer.addIceCandidate(msg.candidate);
+        peer.addIceCandidate(msg.candidate)
+            .catch(function(error) {
+
+                console.log(
+                    "ICE error:",
+                    error
+                );
+
+            });
 
     }
 
 };
 
 socket.onclose = function() {
+
     status.textContent = "SIGNALING DISCONNECTED";
+
 };
 
 socket.onerror = function() {
+
     status.textContent = "SIGNALING ERROR";
+
 };
 
 </script>
