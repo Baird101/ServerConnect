@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+
+<html>
+
+<body>
+
+<h1 id="status">Connecting...</h1>
+
+<script>
+
+var status = document.getElementById("status");
+
+var socket = new WebSocket("wss://217.154.36.84:6396");
+
+var peer = new RTCPeerConnection();
+
+var channel = peer.createDataChannel("relay");
+
+channel.onopen = function() {
+    status.textContent = "WEBRTC CONNECTED!";
+};
+
+channel.onclose = function() {
+    status.textContent = "WEBRTC DISCONNECTED";
+};
+
+channel.onmessage = function(event) {
+    console.log("Received:", event.data);
+};
+
+peer.onicecandidate = function(event) {
+    if(event.candidate) {
+        socket.send(JSON.stringify({
+            type: "ice",
+            candidate: event.candidate
+        }));
+    }
+};
+
+socket.onopen = function() {
+
+    status.textContent = "Signaling connected";
+
+    peer.createOffer()
+        .then(function(offer) {
+            return peer.setLocalDescription(offer);
+        })
+        .then(function() {
+
+            socket.send(JSON.stringify({
+                type: "offer",
+                sdp: peer.localDescription.sdp
+            }));
+
+        });
+
+};
+
+socket.onmessage = function(event) {
+
+    var msg = JSON.parse(event.data);
+
+    if(msg.type === "answer") {
+
+        peer.setRemoteDescription({
+            type: "answer",
+            sdp: msg.sdp
+        });
+
+    }
+
+    if(msg.type === "ice") {
+
+        peer.addIceCandidate(msg.candidate);
+
+    }
+
+};
+
+socket.onclose = function() {
+    status.textContent = "SIGNALING DISCONNECTED";
+};
+
+socket.onerror = function() {
+    status.textContent = "SIGNALING ERROR";
+};
+
+</script>
+
+</body>
+
+</html>
