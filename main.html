@@ -12,34 +12,84 @@
 
 <script>
 
-var status = document.getElementById("status");
+var currentRoom = "main";
+var signalWindow = null;
+var relayReady = false;
 
-var relayWindow = null;
+var RELAY =
+    "https://baird101.github.io/ServerConnect/relay.html";
 
-function connect() {
+function openRelay(action) {
 
-    relayWindow = window.open(
-        "relay.html",
-        "RelayWindow",
-        "width=400,height=300"
+    var url = new URL(RELAY);
+
+    url.searchParams.set("action", action);
+    url.searchParams.set("room", currentRoom);
+
+    var popupName =
+        "chat-relay-" +
+        Math.random().toString(36).substring(2);
+
+    signalWindow = window.open(
+        url.toString(),
+        popupName,
+        "width=420,height=320"
     );
 
-    if(relayWindow) {
+    if(!signalWindow) {
+        console.log("Popup blocked");
+        return;
+    }
 
-        status.textContent =
-            "Relay window opened";
+    relayReady = false;
+}
 
-    } else {
+function closeRelay() {
 
-        status.textContent =
-            "Popup blocked";
+    if(signalWindow && !signalWindow.closed) {
+        signalWindow.close();
+    }
+
+    signalWindow = null;
+    relayReady = false;
+}
+
+window.addEventListener("message", function(event) {
+
+    var data = event.data;
+
+    if(!data || data.type !== "relay_event") {
+        return;
+    }
+
+    if(data.peerEvent === "relay_connected") {
+
+        relayReady = true;
+
+        console.log("Relay connected");
 
     }
 
-}
+    if(data.peerEvent === "webrtc_connected") {
+
+        console.log("WebRTC connected");
+
+    }
+
+    if(data.peerEvent === "webrtc_message") {
+
+        console.log(
+            "WebRTC message:",
+            data.message
+        );
+
+    }
+
+});
+
+openRelay("join");
 
 </script>
-
 </body>
 
 </html>
