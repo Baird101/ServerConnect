@@ -2,147 +2,91 @@
 
 <html>
 
+<head>
+
+<meta charset="utf-8">
+
+<meta name="viewport"
+content="width=device-width,
+initial-scale=1.0,
+maximum-scale=1.0,
+user-scalable=no">
+
+<title>Relay</title>
+
+<style>
+
+html,
+body {
+
+    width: 100%;
+    height: 100%;
+
+    margin: 0;
+    padding: 0;
+
+}
+
+body {
+
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    font-family: sans-serif;
+
+    background: #f5f5f5;
+
+}
+
+#wrap {
+
+    text-align: center;
+
+    width: 100%;
+
+    padding: 20px;
+
+    box-sizing: border-box;
+
+}
+
+#status {
+
+    font-size: 16px;
+
+    margin-bottom: 10px;
+
+}
+
+#lobby {
+
+    font-size: 13px;
+
+    color: #666;
+
+    white-space: pre-line;
+
+}
+
+</style>
+
+</head>
+
 <body>
 
-<h1 id="status">Connecting...</h1>
+<div id="wrap">
 
-<script>
+    <div id="status">
+        Starting...
+    </div>
 
-var status = document.getElementById("status");
+    <div id="lobby"></div>
 
-var socket = new WebSocket("ws://217.154.36.84:6396");
+</div>
 
-var peer = new RTCPeerConnection({
-    iceServers: [
-        {
-            urls: "stun:stun.cloudflare.com:3478"
-        }
-    ]
-});
-
-var channel = peer.createDataChannel("relay");
-
-channel.onopen = function() {
-
-    status.textContent = "WEBRTC CONNECTED!";
-
-    console.log("WebRTC connected");
-
-    channel.send("Hello from the webpage!");
-};
-
-channel.onclose = function() {
-
-    status.textContent = "WEBRTC DISCONNECTED";
-
-    console.log("WebRTC disconnected");
-};
-
-channel.onmessage = function(event) {
-
-    console.log("Received:", event.data);
-
-};
-
-peer.onicecandidate = function(event) {
-
-    if(event.candidate &&
-       socket.readyState === WebSocket.OPEN) {
-
-        socket.send(JSON.stringify({
-            type: "ice",
-            candidate: event.candidate
-        }));
-    }
-};
-
-peer.onconnectionstatechange = function() {
-
-    console.log(
-        "WebRTC state:",
-        peer.connectionState
-    );
-
-};
-
-socket.onopen = function() {
-
-    status.textContent = "Signaling connected";
-
-    console.log("Signaling connected");
-
-    peer.createOffer()
-        .then(function(offer) {
-
-            return peer.setLocalDescription(offer);
-
-        })
-        .then(function() {
-
-            socket.send(JSON.stringify({
-                type: "offer",
-                sdp: peer.localDescription.sdp
-            }));
-
-        })
-        .catch(function(error) {
-
-            console.log("Offer error:", error);
-
-        });
-
-};
-
-socket.onmessage = function(event) {
-
-    var msg = JSON.parse(event.data);
-
-    if(msg.type === "answer") {
-
-        peer.setRemoteDescription({
-            type: "answer",
-            sdp: msg.sdp
-        })
-        .catch(function(error) {
-
-            console.log(
-                "Remote description error:",
-                error
-            );
-
-        });
-
-    }
-
-    if(msg.type === "ice") {
-
-        peer.addIceCandidate(msg.candidate)
-            .catch(function(error) {
-
-                console.log(
-                    "ICE error:",
-                    error
-                );
-
-            });
-
-    }
-
-};
-
-socket.onclose = function() {
-
-    status.textContent = "SIGNALING DISCONNECTED";
-
-};
-
-socket.onerror = function() {
-
-    status.textContent = "SIGNALING ERROR";
-
-};
-
-</script>
+<script src="./p2pRelayScript.js"></script>
 
 </body>
 
