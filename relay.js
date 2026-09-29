@@ -74,14 +74,14 @@ function connectSignaling() {
     );
 
     /*
-     * This must eventually be WSS.
+     * This must eventually be .
      *
      * For local testing with a plain WS server,
      * use ws:// instead.
      */
 
     socket = new WebSocket(
-        "wss://217.154.36.84:6396"
+        "ws://217.154.36.84:6396"
     );
 
     socket.onopen = function() {
